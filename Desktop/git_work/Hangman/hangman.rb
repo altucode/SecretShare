@@ -1,8 +1,12 @@
 class Hangman
 
+  attr_reader :known_letters
+
   def initialize(word_guesser, word_chooser)
     @word_guesser = word_guesser
     @word_chooser = word_chooser
+    @word_chooser.choose_word
+    p @known_letters = Array.new(@word_chooser.secret_word_length) {"_"}
     @guessed_letters = []
     @wrong_guesses_left = 6
     play
@@ -14,22 +18,20 @@ class Hangman
   end
 
   def play
-
-    @word_chooser.choose_word
-    @known_letters = Array.new(@word_chooser.secret_word_length) {"_"}
     render
-
     while !over?
-      guess = @word_guesser.guess_letter
+      guess = @word_guesser.guess_letter(@known_letters, @guessed_letters)
+      @guessed_letters << guess
       letter_locations = @word_chooser.check_letter(guess)
       fill_word(letter_locations,guess)
       render
     end
+
   end
 
   def over?
     if !@known_letters.include?("_")
-      puts "#{@word_guesser} wins!!!!"
+      puts "#{@word_guesser.name} wins!!!!"
       return true
     elsif @wrong_guesses_left == 0
       @word_chooser.wins
@@ -60,13 +62,14 @@ end
 
 class HumanPlayer < Player
 
-  attr_reader :secret_word_length
+  attr_reader :secret_word_length, :name
 
-  def initialize
+  def initialize(name)
     @secret_word_length
+    @name = name
   end
 
-  def guess_letter
+  def guess_letter(word_length, guessed_letters)
     print "Guess a letter: "
     guess = gets.chomp.downcase
   end
@@ -97,15 +100,16 @@ end
 
 class ComputerPlayer < Player
 
-  attr_reader :secret_word_length
+  attr_reader :secret_word_length, :name
 
-  def initialize
-
+  def initialize(name)
+    @name = name
+    @dict = File.readlines("/Users/appacademy/Desktop/git_work/Hangman/dictionary.txt").map {|word| word.chomp}
   end
 
   def choose_word
-    dict = File.readlines("/Users/appacademy/Desktop/git_work/Hangman/dictionary.txt")
-    @secret_word = dict.sample.chomp
+    p @secret_word = @dict.sample.chomp
+
     @secret_word_length = @secret_word.length
   end
 
@@ -123,12 +127,23 @@ class ComputerPlayer < Player
     puts "Yeah, ya blew it bro. The word was #{@secret_word}, duh"
   end
 
-  def guess_letter
-    ("a".."z").to_a.sample
+  def guess_letter(known_letters, guessed_letters)
+    word_pool ||= @dict.select {|potential_word| potential_word.length == known_letters.length}
+    word_so_far = known_letters
+    word_so_far.each_with_index do |letter, index|
+      if word_so_far[index] != "_"
+        word_pool.delete_if { |word| word[index] != letter}
+      end
+    end
+    p guessed_letters
+    letter_pool = word_pool.join.split("").sort.uniq - guessed_letters #I know, I know, clunky. It takes every word and joins it into one massive "word", then splits it by letter, and finds every unique letter. Then it removes all previously guessed letters.
+    p letter_pool
+    letter_pool.sample
   end
 
 end
 
-human = HumanPlayer.new
-comp = ComputerPlayer.new
-new_game = Hangman.new(comp, human)
+human = HumanPlayer.new("Sam")
+comp = ComputerPlayer.new("The Executor")
+comp2 = ComputerPlayer.new("The Executor")
+new_game = Hangman.new(comp, comp2)
