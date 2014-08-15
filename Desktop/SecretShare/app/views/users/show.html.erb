@@ -1,0 +1,30 @@
+<h1><%= @user.username %></h1>
+
+<%= render "secrets/form", secret: @user.authored_secrets.new %>
+
+
+<h2>Secrets</h2>
+<ul>
+  <% @user.received_secrets.each do |secret| %>
+    <li><%= secret.title %> by: <%= secret.author.username %></li>
+  <% end %>
+</ul>
+
+<script>
+  $(document).ready(function () {
+    $(".new-secret").on("submit", function (event) {
+      event.preventDefault();
+      var $title_input = $("#title");
+      var data = $(this).serialize();
+      $.ajax({
+        url: event.target.action,
+        type: event.target.method,
+        data: data,
+        success: function () {
+          $title_input.val("");
+        }
+      });
+    });
+  });
+</script>
+

@@ -1,0 +1,47 @@
+<h1>All Users</h1>
+<script>
+  $(document).ready(function() {
+    $(".friend").on("click", function(event) {
+      var url = "<%= friendships_url %>";
+      console.log(url);
+
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: {
+          "friendship[in_friend_id]": $(this).attr("data-id")
+        }
+      });
+      $(this).addClass("invisible");
+      $(this).siblings(".unfriend").removeClass("invisible");
+    });
+    $(".unfriend").on("click", function(event) {
+      var url = "<%= delete_friendship_url %>"
+      console.log(url);
+
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: {
+          "friendship[in_friend_id]": $(this).attr("data-id"),
+          "friendship[out_friend_id]": "<%= current_user.id %>"
+        }
+      });
+      $(this).addClass("invisible");
+      $(this).siblings(".friend").removeClass("invisible");
+    });
+  });
+</script>
+
+<ul>
+<% User.all.each do |user|%>
+  <% next if user.id == current_user.id %>
+  <li>
+    <a href="<%= user_url(user) %>"><%= user.username %></a>
+    <% is_friend = !Friendship.can_friend?(current_user.id, user.id) %>
+    <button class="friend<%= ' invisible' if is_friend %>" data-id="<%= user.id %>">Friend</button>
+    <button class="unfriend<%= ' invisible' unless is_friend %>" data-id="<%= user.id %>">Unfriend</button>
+
+  </li>
+<% end %>
+</ul>
